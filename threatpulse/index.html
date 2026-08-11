@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThreatPulse — KEV Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark:   #2d1a14;
+            --bg-card:   #3d2318;
+            --bg-hover:  #4a2a1e;
+            --text-main: #f5e6df;
+            --text-muted:#c4957e;
+            --accent:    #e8735a;
+            --accent-hv: #f5a28e;
+            --danger:    #f85149;
+            --border:    #6b3a2a;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: .75rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: white;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            flex-wrap: wrap;
+        }
+
+        h1 svg { color: var(--accent); flex-shrink: 0; }
+
+        .stats { color: var(--text-muted); font-size: .9rem; white-space: nowrap; }
+
+        .controls { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+
+        .search-container { flex-grow: 1; position: relative; }
+
+        .search-input {
+            width: 100%;
+            padding: .75rem 1rem .75rem 2.5rem;
+            border-radius: 8px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: .95rem;
+            box-sizing: border-box;
+            transition: all .2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(232,115,90,.25);
+        }
+
+        .search-input::placeholder { color: var(--text-muted); }
+
+        .search-icon {
+            position: absolute;
+            left: 10px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .table-container {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            box-shadow: 0 4px 6px rgba(0,0,0,.2);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            min-width: 700px;
+        }
+
+        th {
+            background-color: #4a2318;
+            padding: 1rem;
+            font-weight: 600;
+            font-size: .85rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: .85rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: .9rem;
+            vertical-align: middle;
+        }
+
+        tr { transition: background-color .15s ease; }
+        tr:hover { background-color: var(--bg-hover); }
+        tr:last-child td { border-bottom: none; }
+
+        .cve {
+            color: var(--accent);
+            font-weight: 500;
+            text-decoration: none;
+        }
+        .cve:hover { text-decoration: underline; color: var(--accent-hv); }
+
+        .vendor {
+            display: inline-block;
+            padding: .25rem .5rem;
+            border-radius: 4px;
+            background-color: rgba(232,115,90,.15);
+            font-size: .8rem;
+            white-space: nowrap;
+        }
+
+        .description {
+            max-width: 400px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-muted);
+        }
+
+        .date { white-space: nowrap; color: var(--text-muted); }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .error {
+            text-align: center;
+            padding: 2rem;
+            color: var(--danger);
+            background-color: rgba(248,81,73,.1);
+            border-radius: 8px;
+            border: 1px solid rgba(248,81,73,.3);
+            margin-bottom: 1rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        tbody tr { animation: fadeIn .4s ease forwards; opacity: 0; }
+        tbody tr:nth-child(1)  { animation-delay: .05s; }
+        tbody tr:nth-child(2)  { animation-delay: .10s; }
+        tbody tr:nth-child(3)  { animation-delay: .15s; }
+        tbody tr:nth-child(4)  { animation-delay: .20s; }
+        tbody tr:nth-child(5)  { animation-delay: .25s; }
+        tbody tr:nth-child(n+6){ animation-delay: .30s; }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 1.1rem; }
+            .container { padding: 1rem .75rem; }
+            td, th { padding: .65rem .6rem; font-size: .8rem; }
+            .description { max-width: 160px; }
+            .search-input { font-size: .9rem; padding: .65rem .75rem .65rem 2.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                CISA Known Exploited Vulnerabilities
+            </h1>
+            <div class="stats" id="stats">Loading data...</div>
+        </header>
+
+        <div class="controls">
+            <div class="search-container">
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" id="searchInput" class="search-input"
+                       placeholder="Search by CVE, Vendor, Product, or Description..."
+                       autocomplete="off" autocorrect="off" autocapitalize="off">
+            </div>
+        </div>
+
+        <div id="errorContainer"></div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>CVE ID</th>
+                        <th>Vendor / Project</th>
+                        <th>Product</th>
+                        <th>Vulnerability Name</th>
+                        <th>Description</th>
+                        <th>Date Added</th>
+                    </tr>
+                </thead>
+                <tbody id="vulnTableBody">
+                    <tr><td colspan="6" class="loading">Fetching vulnerability data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const tbody    = document.getElementById('vulnTableBody');
+        const searchEl = document.getElementById('searchInput');
+        const statsEl  = document.getElementById('stats');
+        const errorEl  = document.getElementById('errorContainer');
+        let allVulns   = [];
+
+        function esc(s) {
+            return String(s ?? '')
+                .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        async function fetchData() {
+            try {
+                const r = await fetch('/api/vulns');
+                if (!r.ok) throw new Error('HTTP error! Status: ' + r.status);
+                allVulns = await r.json();
+                renderTable(allVulns);
+            } catch (e) {
+                console.error('Error fetching data:', e);
+                errorEl.innerHTML = `<div class="error">Failed to load vulnerability data. (${esc(e.message)})</div>`;
+                tbody.innerHTML   = '';
+                statsEl.textContent = 'Error loading data';
+            }
+        }
+
+        function renderTable(data) {
+            statsEl.textContent = `Showing ${data.length} vulnerabilities`;
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="loading">No matching vulnerabilities found.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(v => `
+                <tr>
+                    <td><a href="https://nvd.nist.gov/vuln/detail/${esc(v.cveID)}" target="_blank" rel="noopener" class="cve">${esc(v.cveID)}</a></td>
+                    <td><span class="vendor">${esc(v.vendorProject)}</span></td>
+                    <td>${esc(v.product)}</td>
+                    <td title="${esc(v.vulnerabilityName)}">${esc(v.vulnerabilityName)}</td>
+                    <td><div class="description" title="${esc(v.shortDescription)}">${esc(v.shortDescription)}</div></td>
+                    <td class="date">${esc(v.dateAdded)}</td>
+                </tr>
+            `).join('');
+        }
+
+        searchEl.addEventListener('input', e => {
+            const t = e.target.value.toLowerCase();
+            renderTable(allVulns.filter(v =>
+                ['cveID','vendorProject','product','vulnerabilityName','shortDescription']
+                    .some(k => v[k] && v[k].toLowerCase().includes(t))
+            ));
+        });
+
+        fetchData();
+    })();
+    </script>
+</body>
+</html>
